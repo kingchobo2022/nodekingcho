@@ -34,9 +34,10 @@ app.use((req, res, next) => {
 
 // Routes
 const authRouter = require('./routes/auth');
+const memberRouter = require('./routes/member');
 
 app.use('/auth', authRouter);
-
+app.use('/member', memberRouter);
 
 app.get('/', (req, res) => {
     res.render('index', { title: '왕초뮤니티 - 홈' });

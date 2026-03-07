@@ -35,8 +35,17 @@
                     <li class="nav-item"><a class="nav-link" href="/bbs/list?code=FREE">자유게시판</a></li>
                 </ul>
                 <ul class="navbar-nav">
+                    <% if (user) { %>
+                    <li class="nav-item">
+                        <span class="nav-link text-white">
+                            <%= user.userId %>님 환영합니다.
+                        </span>    
+                    </li>
+                    <li class="nav-item"><a href="/auth/logout" class="nav-link">로그아웃</a></li>                                
+                    <% } else { %>
                     <li class="nav-item"><a class="nav-link" href="/auth/login">로그인</a></li>
                     <li class="nav-item"><a class="nav-link" href="/auth/register">회원가입</a></li>
+                    <% } %>
                 </ul>
             </div>
         </div>
