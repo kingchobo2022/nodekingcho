@@ -34,9 +34,11 @@ app.use((req, res, next) => {
 
 // Routes
 const authRouter = require('./routes/auth');
+const bbsRouter = require('./routes/bbs');
 const memberRouter = require('./routes/member');
 
 app.use('/auth', authRouter);
+app.use('/bbs', bbsRouter);
 app.use('/member', memberRouter);
 
 app.get('/', (req, res) => {
