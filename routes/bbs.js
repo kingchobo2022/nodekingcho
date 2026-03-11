@@ -56,8 +56,32 @@ router.get('/write', checkLoggedIn, (req, res) => {
 });
 
 // Write Process
+router.post('/write', checkLoggedIn, async (req, res) => {
+    const { code, subject, content } = req.body;
+    // Access control for NOTICE
+    if (code === 'NOTICE' && req.session.user.userId !== 'admin') {
+        return res.status(403).send('<script>alert("관리자만 공지사항을 작성할 수 있습니다.");history.go(-1);</script>');
+    }
+    try {
+        await db.execute(
+            'INSERT INTO bbs (code, subject, content, author_id) VALUES (?, ?, ?, ?)',
+            [code, subject, content, req.session.user.id]
+        );
+        res.redirect(`/bbs/list?code=${code}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Database Error');
+    }
+});
 
 // Image Upload API for Summernote
+router.post('/upload', checkLoggedIn, upload.single('image'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: imageUrl });
+});
 
 // View Page
 
