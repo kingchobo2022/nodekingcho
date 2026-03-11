@@ -44,6 +44,26 @@ function checkLoggedIn(req, res, next) {
 }
 
 // List
+router.get('/list', async (req, res) => {
+
+    try {
+        const [rows] = await db.execute(`
+            SELECT b.*, m.userId as author_name
+            FROM bbs b
+            LEFT JOIN member m ON b.author_id = m.id 
+            LIMIT 10
+        `);
+
+        res.render('bbs/list', {
+            title : '공지사항 or 자유게시판', 
+            posts: rows
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Database Error');
+    }
+});
 
 // Write Page
 router.get('/write', checkLoggedIn, (req, res) => {

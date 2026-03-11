@@ -1,0 +1,90 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <%= title %>
+    </h2>
+    <a href="/bbs/write?code=<%= code %>" class="btn btn-primary">글쓰기</a>
+</div>
+
+<table class="table table-hover">
+    <thead class="table-light">
+        <tr>
+            <th>번호</th>
+            <th>제목</th>
+            <th>작성자</th>
+            <th>작성일</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% if (posts.length > 0) { %>
+            <% posts.forEach(post => {  %>
+        <tr style="cursor: pointer;" onclick="location.href='#'">
+            <td>
+                <%= post.id %>
+            </td>
+            <td><a href="/bbs/view/<%= post.id %>" class="text-decoration-none text-dark fw-bold">
+                    <%= post.subject %>
+                </a></td>
+            <td>
+                <%= post.author_name || '탈퇴한 회원' %>
+            </td>
+            <td>
+                <%= new Date(post.created_at).toLocaleDateString() %>
+            </td>
+        </tr>
+            <% }); %>
+        <% } else { %>
+        <tr>
+            <td colspan="4" class="text-center py-5 text-muted">등록된 게시물이 없습니다.</td>
+        </tr>    
+        <% } %>    
+    </tbody>
+</table>
+
+<!-- Pagination -->
+
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        <li class="page-item disabled">
+            <a class="page-link"
+                href="#">이전</a>
+        </li>
+
+            <li class="page-item active">
+                <a class="page-link"
+                    href="#">
+                    1
+                </a>
+            </li>
+
+            <li class="page-item">
+                <a class="page-link"
+                    href="#">
+                    2
+                </a>
+            </li>
+
+            <li class="page-item">
+                    <a class="page-link"
+                        href="#">다음</a>
+            </li>
+    </ul>
+</nav>
+
+
+<!-- Search Form -->
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <form action="#" method="get" class="d-flex gap-2">
+            <input type="hidden" name="code" value="#">
+            <select name="searchType" class="form-select" style="width: 120px;">
+                <option value="subject">제목</option>
+                <option value="content">내용</option>
+                <option value="all">제목+내용</option>
+            </select>
+            <input type="text" name="search" class="form-control" placeholder="검색어를 입력하세요"
+                value="">
+            <button type="submit" class="btn btn-secondary" style="width: 80px;">검색</button>
+        </form>
+    </div>
+
+</div>
