@@ -46,17 +46,35 @@ function checkLoggedIn(req, res, next) {
 // List
 router.get('/list', async (req, res) => {
 
+    const code = req.query.code || 'FREE';
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
     try {
+        // Get total count for pagination
+        const [countRows] = await db.execute(`
+            SELECT COUNT(*) as total 
+            FROM bbs b `);
+
+        const totalPosts = countRows[0].total;
+        const totalPages = Math.ceil(totalPosts / limit);
+
+        // Get paginated posts
         const [rows] = await db.execute(`
             SELECT b.*, m.userId as author_name
             FROM bbs b
             LEFT JOIN member m ON b.author_id = m.id 
-            LIMIT 10
-        `);
+            ORDER BY b.id DESC
+            LIMIT ? OFFSET ?`, [limit.toString(), offset.toString()]
+        );
 
         res.render('bbs/list', {
-            title : '공지사항 or 자유게시판', 
-            posts: rows
+            title : code === 'NOTICE' ? '공지사항' : '자유게시판', 
+            posts: rows,
+            code,
+            currentPage: page,
+            totalPages
         });
 
     } catch (err) {

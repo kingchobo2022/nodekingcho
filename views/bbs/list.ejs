@@ -28,7 +28,16 @@
                 <%= post.author_name || '탈퇴한 회원' %>
             </td>
             <td>
-                <%= new Date(post.created_at).toLocaleDateString() %>
+                <% 
+  const d = new Date(post.created_at);
+  const f = (unit) => new Intl.DateTimeFormat('ko-KR', { [unit]: '2-digit' }).format(d).replace('.', '');
+  const year = d.getFullYear();
+  const month = f('month');
+  const day = f('day');
+  const time = d.toTimeString().split(' ')[0];
+%>
+<%= `${year} ${month} ${day} ${time}` %>
+
             </td>
         </tr>
             <% }); %>
@@ -41,34 +50,29 @@
 </table>
 
 <!-- Pagination -->
-
-<nav aria-label="Page navigation" class="mt-4">
-    <ul class="pagination justify-content-center">
-        <li class="page-item disabled">
-            <a class="page-link"
-                href="#">이전</a>
-        </li>
-
-            <li class="page-item active">
-                <a class="page-link"
-                    href="#">
-                    1
-                </a>
-            </li>
-
-            <li class="page-item">
-                <a class="page-link"
-                    href="#">
-                    2
-                </a>
-            </li>
-
-            <li class="page-item">
+<% if (typeof totalPages !=='undefined' && totalPages> 1) { %>
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+                <li class="page-item <%= locals.currentPage === 1 ? 'disabled' : '' %>">
                     <a class="page-link"
-                        href="#">다음</a>
-            </li>
-    </ul>
-</nav>
+                        href="/bbs/list?code=<%= code %>&page=<%= locals.currentPage - 1 %>">이전</a>
+                </li>
+            <% for(let i=1; i <=totalPages; i++) { %>
+                <li class="page-item <%= locals.currentPage === i ? 'active' : '' %>">
+                    <a class="page-link"
+                        href="/bbs/list?code=<%= code %>&page=<%= i %>">
+                        <%= i %>
+                    </a>
+                </li>
+            <% } %>
+                <li class="page-item <%= locals.currentPage === totalPages ? 'disabled' : '' %>">
+                    <a class="page-link"
+                        href="/bbs/list?code=<%= code %>&page=<%= locals.currentPage + 1 %>">다음</a>
+                </li>
+        </ul>
+    </nav>
+<% } %>
+
 
 
 <!-- Search Form -->
