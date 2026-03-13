@@ -50,12 +50,29 @@ router.get('/list', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
     const offset = (page - 1) * limit;
+    const search = req.query.search || '';
+    const searchType = req.query.searchType || 'subject'; // subject, content, all
 
     try {
+        let whereClause = ' WHERE b.code = ? ';
+        let params = [code];
+        if (search) {
+            if (searchType === 'subject') {
+                whereClause += ' AND b.subject LIKE ? ';
+                params.push(`%${search}%`);
+            } else if (searchType === 'content') {
+                whereClause += ' AND b.content LIKE ? ';
+                params.push(`%${search}%`);
+            } else if (searchType === 'all') {
+                whereClause += ' AND (b.subject LIKE ? OR b.content LIKE ? ) ';
+                params.push(`%${search}%`, `%${search}%`);
+            }
+        }
+
         // Get total count for pagination
         const [countRows] = await db.execute(`
             SELECT COUNT(*) as total 
-            FROM bbs b `);
+            FROM bbs b ${whereClause}`, params);
 
         const totalPosts = countRows[0].total;
         const totalPages = Math.ceil(totalPosts / limit);
@@ -65,8 +82,9 @@ router.get('/list', async (req, res) => {
             SELECT b.*, m.userId as author_name
             FROM bbs b
             LEFT JOIN member m ON b.author_id = m.id 
+            ${whereClause}
             ORDER BY b.id DESC
-            LIMIT ? OFFSET ?`, [limit.toString(), offset.toString()]
+            LIMIT ? OFFSET ?`, [...params, limit.toString(), offset.toString()]
         );
 
         res.render('bbs/list', {
@@ -74,7 +92,9 @@ router.get('/list', async (req, res) => {
             posts: rows,
             code,
             currentPage: page,
-            totalPages
+            totalPages,
+            search,
+            searchType
         });
 
     } catch (err) {
