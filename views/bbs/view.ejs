@@ -1,0 +1,21 @@
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h3 class="mb-2">
+            <%= post.subject %>
+        </h3>
+        <div class="text-muted small">
+            작성자: <%= post.author_name || '탈퇴한 회원' %> | 작성일: <%= new Date(post.created_at).toLocaleString() %>
+        </div>
+    </div>
+    <div class="card-body" style="min-height: 300px;">
+        <%- post.content %>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a href="/bbs/list?code=<%= post.code %>" class="btn btn-outline-secondary">목록으로</a>
+        <% if (user && (user.id===post.author_id || user.userId==='admin' )) { %>
+            <a href="/bbs/edit/<%= post.id %>" class="btn btn-outline-primary">수정</a>
+            <a href="/bbs/delete/<%= post.id %>" class="btn btn-outline-danger"
+                onclick="return confirm('정말 삭제하시겠습니까?')">삭제</a>
+        <% } %>
+    </div>
+</div>

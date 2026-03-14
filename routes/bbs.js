@@ -141,13 +141,144 @@ router.post('/upload', checkLoggedIn, upload.single('image'), (req, res) => {
     res.json({ url: imageUrl });
 });
 
-// View Page
+// View page
+router.get('/view/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await db.execute(`
+            SELECT b.*, m.userId as author_name 
+            FROM bbs b 
+            LEFT JOIN member m ON b.author_id = m.id 
+            WHERE b.id = ?`, [id]);
+        if (rows.length === 0) return res.status(404).send('Not Found');
+        res.render('bbs/view', { title: rows[0].subject, post: rows[0] });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Database Error');
+    }
+});
 
 // Edit Page
+router.get('/edit/:id', checkLoggedIn, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await db.execute('SELECT * FROM bbs WHERE id = ?', [id]);
+        if (rows.length === 0) return res.status(404).send('Not Found');
+
+        const post = rows[0];
+        // Permission check: owner or admin
+        if (req.session.user.id !== post.author_id && req.session.user.userId !== 'admin') {
+            return res.status(403).send('수정 권한이 없습니다.');
+        }
+
+        res.render('bbs/edit', { title: '글 수정', post });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Database Error');
+    }
+});
 
 // Edit Process
+router.post('/edit/:id', checkLoggedIn, async (req, res) => {
+    const { id } = req.params;
+    const { subject, content } = req.body;
+    try {
+        const [rows] = await db.execute('SELECT * FROM bbs WHERE id = ?', [id]);
+        if (rows.length === 0) return res.status(404).send('Not Found');
+
+        const post = rows[0];
+        // Permission check: owner or admin
+        if (req.session.user.id !== post.author_id && req.session.user.userId !== 'admin') {
+            return res.status(403).send('수정 권한이 없습니다.');
+        }
+
+        // Delete removed images
+        const oldContent = post.content;
+        const newContent = content;
+        const imgRegex = /\/uploads\/([a-zA-Z0-9.\-_~]+)/g;
+
+        const getImages = (text) => {
+            const imgs = new Set();
+            let match;
+            const regex = new RegExp(imgRegex);
+            while ((match = regex.exec(text)) !== null) {
+                imgs.add(match[1]);
+            }
+            return imgs;
+        };
+
+        const oldImages = getImages(oldContent);
+        const newImages = getImages(newContent);
+
+        // Delete images that are in old but not in new
+        for (const fileName of oldImages) {
+            if (!newImages.has(fileName)) {
+                const filePath = path.join(__dirname, '..', 'public', 'uploads', fileName);
+                try {
+                    await fs.unlink(filePath);
+                } catch (error) {
+                    if (error.code !== 'ENOENT') {
+                        console.error(`Error deleting file ${filePath}:`, error);
+                    }
+                }
+            }
+        }
+
+        await db.execute(
+            'UPDATE bbs SET subject = ?, content = ? WHERE id = ?',
+            [subject, content, id]
+        );
+        res.redirect(`/bbs/view/${id}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Database Error');
+    }
+});
+
 
 // Delete Process
+router.get('/delete/:id', checkLoggedIn, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await db.execute('SELECT * FROM bbs WHERE id = ?', [id]);
+        if (rows.length === 0) return res.status(404).send('Not Found');
+
+        const post = rows[0];
+        const code = post.code;
+
+        // Permission check: owner or admin
+        if (req.session.user.id !== post.author_id && req.session.user.userId !== 'admin') {
+            return res.status(403).send('삭제 권한이 없습니다.');
+        }
+
+        // Delete images in content
+        const content = post.content || '';
+        const imgRegex = /\/uploads\/([a-zA-Z0-9.\-_~]+)/g;
+        const imagesToDelete = new Set();
+        let match;
+
+        while ((match = imgRegex.exec(content)) !== null) {
+            imagesToDelete.add(match[1]);
+        }
+
+        for (const fileName of imagesToDelete) {
+            const filePath = path.join(__dirname, '..', 'public', 'uploads', fileName);
+            try {
+                await fs.unlink(filePath);
+            } catch (error) {
+                if (error.code !== 'ENOENT') {
+                    console.error(`Error deleting file ${filePath}:`, error);
+                }
+            }
+        }
+
+        await db.execute('DELETE FROM bbs WHERE id = ?', [id]);
+        res.redirect(`/bbs/list?code=${code}`);
+    } catch (err) {
+        console.error('Delete error:', err);
+        res.status(500).send('Database Error');
+    }
+});
 
 module.exports = router;
 
